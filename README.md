@@ -1,152 +1,119 @@
-# EduPredict: Student Academic Performance & Risk Classifier
+# 🎓 Student Performance Classification (Linear Regression)
 
-An end-to-end Machine Learning system that classifies student academic performance into **High**, **Average**, or **Low** tiers, provides Explainable AI (XAI) feature attribution, flags at-risk students, and delivers prescriptive improvement suggestions through an interactive interface.
+A clean, beginner-friendly Machine Learning system built with **Linear Regression** that classifies student performance into **High**, **Average**, or **Low** based on academic factors.
 
 ---
 
-## 🌟 Key Features
-
-- **Multi-Class Classification**: Categorizes performance into `High` (Grades 15–20), `Average` (Grades 10–14), and `Low` (Grades 0–9) with confidence scoring.
-- **Explainable AI (Factor Attribution)**: Calculates exact positive drivers and negative drags for individual predictions via marginal feature perturbation.
-- **Academic Risk Early Warning (Bonus)**: Identifies at-risk students (High, Moderate, Low Risk) based on failure history, chronic absenteeism, and study deficits.
-- **Prescriptive Action Plans (Bonus)**: Generates prioritized, personalized recommendations tailored to individual student weaknesses.
-- **Batch CSV Analysis (Bonus)**: Enables multi-student CSV upload, batch diagnostic evaluation, and enriched CSV report export.
-- **Interactive Web App (Bonus)**: Clean Streamlit application for both single-student inference and batch cohort exploration.
+## 📌 Project Overview & Features
+- **Classification**: Predicts final grade ($0-20$) and classifies students into:
+  - **High**: Score $\ge 15$
+  - **Average**: Score between $10$ and $14.9$
+  - **Low**: Score $< 10$ (Failing / At-Risk)
+- **Confidence Score**: Distance-based certainty score ($55\% - 98.5\%$).
+- **Explainable Factors**: Calculates exact factor contributions using learned Linear Regression weights ($w_i \times x_i$).
+- **Confusion Matrix**: Evaluates model predictions across all 3 classes.
+- **Bonus Features**:
+  - ⚠️ **At-Risk Flagging**: Alerts on failing predictions, repeated failures, or high absenteeism.
+  - 💡 **Improvement Suggestions**: Actionable recommendations for weaker factors.
+  - 📂 **Batch CSV Upload**: Analyze cohorts of students at once.
+  - 🖥️ **Interactive Web App**: Simple Streamlit UI.
 
 ---
 
 ## 🛠️ Technology Stack
-
-- **Language**: Python 3.10+
-- **Data & Core ML**: `Pandas`, `NumPy`, `scikit-learn`
-- **Visualization**: `Matplotlib`, `Seaborn`
-- **Web Interface**: `Streamlit`
-- **Persistence**: `Joblib`
+- **Language**: Python
+- **Libraries**: Pandas, NumPy, scikit-learn, Matplotlib, Seaborn, Streamlit
 
 ---
 
-## 🚀 Setup & Installation
+## 🚀 Setup & How to Run
 
-### 1. Clone & Navigate
 ```bash
+# 1. Clone repo
 git clone https://github.com/20anuragsingh/GDG_ABESEC.git
 cd GDG_ABESEC
-```
 
-### 2. Create Virtual Environment & Install Dependencies
-```bash
-python3 -m venv venv
-source venv/bin/activate
+# 2. Install dependencies
 pip install -r requirements.txt
-```
 
-### 3. Launch Interactive Web App
-```bash
+# 3. Launch Web App
 streamlit run app.py
 ```
 
-### 4. CLI Execution
-- **Train & Benchmark Models**:
-  ```bash
-  python src/train.py
-  ```
-- **Single Demo Prediction**:
-  ```bash
-  python src/predict.py
-  ```
-- **Batch CSV Prediction**:
-  ```bash
-  python src/predict.py --input_csv data/sample_students.csv --output_csv predictions.csv
-  ```
-- **Run Test Suite**:
-  ```bash
-  python -m unittest tests/test_pipeline.py
-  ```
+### CLI Commands
+- **Train Model**: `python src/train.py`
+- **Predict Demo Student**: `python src/predict.py`
+- **Batch CSV Prediction**: `python src/predict.py --input_csv data/sample_students.csv`
+- **Run Tests**: `python -m unittest tests/test_pipeline.py`
 
 ---
 
-## 📂 Dataset & Source
-
-- **Dataset**: [UCI Student Performance Dataset](https://archive.ics.uci.edu/dataset/320/student+performance) (Cortez & Silva, 2008, University of Minho).
-- **Scope**: 1,044 student records across Mathematics and Portuguese subjects with 32 demographic, social, attendance, and academic attributes.
-- **Target Discretization**: Standard Portuguese 20-point scale:
-  - **High**: $15 \le G3 \le 20$ ($\ge 75\%$)
-  - **Average**: $10 \le G3 \le 14$ ($50\% - 70\%$)
-  - **Low**: $0 \le G3 \le 9$ ($< 50\%$, Failing/At-Risk)
+## 📊 Dataset & Source
+- **Dataset**: [UCI Student Performance Dataset](https://archive.ics.uci.edu/dataset/320/student+performance) (`student-mat.csv`).
+- **Core 5 Features**:
+  1. `G1`: First period exam grade ($0-20$)
+  2. `G2`: Second period exam grade ($0-20$)
+  3. `studytime`: Weekly study hours ($1: <2\text{h}, 2: 2-5\text{h}, 3: 5-10\text{h}, 4: >10\text{h}$)
+  4. `failures`: Number of past failed classes ($0-4$)
+  5. `absences`: School days missed ($0-93$)
 
 ---
 
-## 🧠 Machine Learning Approach
+## 🧠 Model Approach & Math
 
-### 1. Preprocessing Pipeline
-- **Numerical Features** (`G1`, `G2`, `studytime`, `absences`, `failures`, etc.): Standardized via `StandardScaler`.
-- **Categorical Features** (`school`, `Mjob`, `higher`, `internet`, etc.): Encoded via `OneHotEncoder(drop='first', handle_unknown='ignore')`.
-- Encapsulated into a leak-free `ColumnTransformer` inside a unified scikit-learn `Pipeline`.
+The model fits an Ordinary Least Squares (OLS) **Linear Regression**:
 
-### 2. Model Selection & Cross-Validation Benchmarks (5-Fold CV)
-| Model | CV Accuracy | Weighted F1 | Macro F1 |
+$$\hat{y} = w_1 \cdot \text{studytime} + w_2 \cdot \text{failures} + w_3 \cdot \text{absences} + w_4 \cdot G1 + w_5 \cdot G2 + b$$
+
+- **Learned Equation**:
+  - $G2$ weight: `+0.9796` (strongest positive driver)
+  - $G1$ weight: `+0.1445` (positive driver)
+  - `failures` weight: `-0.4558` (penalty per failure)
+  - `absences` weight: `+0.0392`
+  - `studytime` weight: `-0.0712`
+  - Intercept ($b$): `-1.6213`
+
+### Evaluation Results (Test Set)
+- **Classification Accuracy**: **78.48%**
+- **Confusion Matrix**:
+
+| True \ Pred | Low | Average | High |
 | :--- | :---: | :---: | :---: |
-| **Random Forest (Selected)** | **86.11% (±0.0108)** | **0.8620** | **0.8557** |
-| Gradient Boosting | 85.25% (±0.0138) | 0.8516 | 0.8393 |
-| Logistic Regression | 83.72% (±0.0066) | 0.8388 | 0.8325 |
-| Support Vector Machine (SVC) | 82.00% (±0.0286) | 0.8216 | 0.8144 |
-
-### 3. Holdout Test Set Performance (80/20 Stratified Split)
-- **Overall Accuracy**: **84.69%**
-- **Weighted F1**: **0.8468** | **Macro F1**: **0.8365**
-- **Class-wise Metrics**:
-  - `High`: Precision = 0.86, Recall = 0.90, F1 = 0.88
-  - `Average`: Precision = 0.88, Recall = 0.86, F1 = 0.87
-  - `Low`: Precision = 0.76, Recall = 0.76, F1 = 0.76
+| **Low** | 27 | 0 | 0 |
+| **Average** | 11 | 21 | 0 |
+| **High** | 0 | 6 | 14 |
 
 ![Confusion Matrix](models/confusion_matrix.png)
 
 ---
 
-## 💡 Challenges Faced & Solutions
-
-1. **Class Imbalance**:
-   - *Challenge*: The dataset naturally has more Average students (58.4%) than High (19.5%) or Low (22.0%).
-   - *Solution*: Configured `class_weight='balanced'` in Random Forest and evaluated Macro F1 alongside accuracy to ensure minority classes are predicted accurately without bias.
-2. **Feature Leakage Prevention**:
-   - *Challenge*: Preprocessing statistics (mean/std/one-hot levels) must not leak from test/evaluation data.
-   - *Solution*: Coupled preprocessing and estimator inside a single `Pipeline`, ensuring transformation parameters fit strictly on training folds during cross-validation.
-3. **Local Explainability without Bloated Dependencies**:
-   - *Challenge*: Heavy external explainability libraries can create version conflicts and slow inference.
-   - *Solution*: Implemented marginal perturbation attribution against population baselines, yielding fast, mathematically intuitive directional impact scores ($\Delta P$).
+## 💡 Challenges & Simple Solutions
+1. **Converting Continuous Regression to 3-Class Labels**:
+   - Used domain thresholding based on the standard European/Portuguese academic grading scale ($<10$ Fail, $10-14$ Pass, $\ge 15$ Distinction).
+2. **Explainability for Students**:
+   - Used linear coefficients directly to show clear positive/negative contributions ($w_i \times x_i$) so non-technical users immediately understand why a prediction was made.
 
 ---
 
 ## 📁 Repository Structure
-
 ```
 GDG_ABESEC/
-├── app.py                      # Interactive Streamlit Web Application
-├── requirements.txt            # Project dependencies
-├── .gitignore                  # Git ignore specification
-├── README.md                   # Project documentation
+├── app.py                      # Simple Streamlit web interface
+├── requirements.txt            # Python dependencies
+├── README.md                   # Documentation
 ├── data/
-│   ├── student-mat.csv         # Math course dataset
-│   ├── student-por.csv         # Portuguese course dataset
-│   └── sample_students.csv     # Ready-to-use batch testing template
+│   ├── student-mat.csv         # UCI Math dataset
+│   └── sample_students.csv     # 5-column CSV template for batch test
 ├── models/
-│   ├── best_model.joblib       # Serialized production pipeline
-│   ├── model_metadata.json     # Test metrics & feature rankings
-│   └── confusion_matrix.png    # Test set confusion matrix figure
+│   ├── linear_model.joblib     # Trained Linear Regression model
+│   ├── model_metadata.json     # Accuracy and learned weights
+│   └── confusion_matrix.png    # Confusion matrix visual
 ├── src/
 │   ├── __init__.py
-│   ├── data_loader.py          # Data ingestion, schema & target discretization
-│   ├── train.py                # Benchmarking, CV & model persistence
-│   ├── predict.py              # Single & batch inference engine
-│   └── explainer.py            # Local feature attribution & risk rules
+│   ├── model.py                # Core training, inference & explainability
+│   ├── train.py                # Training runner script
+│   └── predict.py              # CLI inference script
 └── tests/
     ├── __init__.py
-    └── test_pipeline.py        # Automated test suite (7/7 passing)
+    └── test_pipeline.py        # Automated test suite (all passing)
 ```
-
----
-
-## 🌐 Deployed Project Link
-
-- **Local Web App**: Run `streamlit run app.py` (Local URL: `http://localhost:8501`)
-- **Live Deployment**: Deployable with zero code change on [Streamlit Community Cloud](https://share.streamlit.io/) or Render/HuggingFace Spaces by pointing directly to this repository and `app.py`.
